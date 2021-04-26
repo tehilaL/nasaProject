@@ -16,7 +16,7 @@ const returnPictures = async (req, res) => {
             if (!picture)
                 res.status(500).json({ message: "failed" })
             newPicture = new Picture({
-                date: new Date(),
+                date: new Date().toISOString().slice(0, 10),
                 explanation: picture.explanation,
                 "media_type": picture.media_type,
                 title: picture.title,
@@ -31,6 +31,7 @@ const returnPictures = async (req, res) => {
                 if (user == id) {
                     return true;
                 }
+                return false;
             });
             if (!check) {
                 await newPicture.update({ $push: { userId: id } })
@@ -38,10 +39,11 @@ const returnPictures = async (req, res) => {
                 await User.findByIdAndUpdate(id, { $push: { pictures: newPicture._id } })
             }
         }
-
+        const pictures = await User.findById(id).populate( 'pictures' )
+        console.log(pictures);
         // const pictures = await Picture.find().populate({path:'userId',match:{_id:id}})
-        const pictures = await Picture.find()
-        res.status(200).json({ message: "Succeeded", newPicture: newPicture, pictures: pictures })
+        // const pictures = await Picture.find()
+        res.status(200).json({ message: "Succeeded", newPicture: newPicture, pictures: pictures.pictures })
 
     } catch (err) {
         res.status(500).json({ message: "failed", error: err })
@@ -68,7 +70,7 @@ const saveUsersPicture = async (req, res) => {
         console.log('newPicture');
         console.log(newPicture);
 
-        // await User.findByIdAndUpdate(id, { $push: { pictures: newPicture._id } })
+        await User.findByIdAndUpdate(id, { $push: { pictures: newPicture._id } })
         res.status(200).json({ message: "saved", newPicture: newPicture })
     }
     catch (err) {
@@ -86,7 +88,7 @@ const deletePictureFromUser = async (req, res) => {
             await picture.remove();
         }
         else
-        await Picture.findByIdAndUpdate(req.params.pictureId, { $pull: { userId: req.params.userId } });
+            await Picture.findByIdAndUpdate(req.params.pictureId, { $pull: { userId: req.params.userId } });
         await User.findByIdAndUpdate(req.params.userId, { $pull: { pictures: req.params.pictureId } })
         user = await User.findById(req.params.userId)
         console.log(user);
